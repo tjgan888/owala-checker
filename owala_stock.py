@@ -164,7 +164,7 @@ def load_state():
         return {}
 
 
-def run_once():
+def run_once(sites=None):
     old = load_state()
     new = {}
     restocked = []
@@ -172,6 +172,8 @@ def run_once():
     print("        " + "".join(f"{c:　<5}" for c in COLORS))
     links = []
     for site, func in SITES.items():
+        if sites and site not in sites:
+            continue
         try:
             data = func()
         except Exception as e:
@@ -209,17 +211,22 @@ def main():
     ap = argparse.ArgumentParser(description="Owala Tritan 740ml 進貨查詢")
     ap.add_argument("--watch", type=float, metavar="分鐘", help="每隔幾分鐘自動檢查一次")
     ap.add_argument("--test-notify", action="store_true", help="送一則測試通知")
+    ap.add_argument("--sites", nargs="+", choices=list(SITES), help="只查這幾家")
+    ap.add_argument("--state", metavar="檔案", help="狀態檔位置（預設 last_state.json）")
     args = ap.parse_args()
 
+    global STATE_FILE
+    if args.state:
+        STATE_FILE = Path(args.state)
     if args.test_notify:
         notify("Owala 通知測試", "收到這則訊息代表補貨通知設定成功！")
         return
     if not args.watch:
-        run_once()
+        run_once(args.sites)
         return
     print(f"開始監控，每 {args.watch:g} 分鐘檢查一次（Ctrl+C 結束）")
     while True:
-        run_once()
+        run_once(args.sites)
         time.sleep(args.watch * 60)
 
 
