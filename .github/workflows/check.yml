@@ -1,0 +1,43 @@
+name: Owala 補貨檢查
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 每 10 分鐘（GitHub 尖峰時段可能延遲幾分鐘）
+  workflow_dispatch:
+    inputs:
+      test_notify:
+        description: "只送一則測試通知"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: owala-check
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 查庫存
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: python owala_stock.py ${{ inputs.test_notify && '--test-notify' || '' }}
+
+      - name: 記住這次的庫存狀態
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add last_state.json 2>/dev/null || exit 0
+          git diff --cached --quiet || (git commit -m "更新庫存狀態" && git push)
