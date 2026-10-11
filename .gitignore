@@ -1,2 +1,4 @@
 __pycache__/
 *.bat
+local_state.json
+*.log
