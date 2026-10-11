@@ -1,0 +1,16 @@
+name: debug-eslite
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+          for u in "https://athena.eslite.com/api/v1/products/10052271402683051101001" "https://athena.eslite.com/api/v2/search?q=owala%20tritan&size=5&start=0"; do
+            echo "== $u"
+            curl -s -o body.txt -D - -A "$UA" "$u" | head -20
+            head -c 400 body.txt; echo
+            echo "-- with browser headers"
+            curl -s -o /dev/null -w "%{http_code}\n" -A "$UA" -H "Accept: application/json, text/plain, */*" -H "Accept-Language: zh-TW,zh;q=0.9" -H "Origin: https://www.eslite.com" -H "Referer: https://www.eslite.com/" "$u"
+          done
+          curl -s https://ipinfo.io/json
